@@ -1,14 +1,16 @@
+
 FROM node:20-alpine AS frontend-build
 
-WORKDIR /app
+WORKDIR /frontend
 
 COPY ./Frontend/frontend/package*.json ./
 
 RUN npm install
 
-COPY ./Frontend/frontend /app
+COPY ./Frontend/frontend .
 
 RUN npm run build
+
 
 FROM node:20-alpine
 
@@ -18,9 +20,11 @@ COPY ./backend/package*.json ./
 
 RUN npm install
 
-COPY ./backend /app
+COPY ./backend .
 
-COPY --from=frontend-build /app/dist /app/public
 
-CMD ["node","server.js"]
+COPY --from=frontend-build /frontend/dist ./public
 
+EXPOSE 3000
+
+CMD ["node", "server.js"]

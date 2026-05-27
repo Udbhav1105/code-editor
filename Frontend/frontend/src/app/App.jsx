@@ -1,125 +1,321 @@
-import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react'
-import './App.css'
-import { Editor } from '@monaco-editor/react'
-import * as Y from 'yjs'
-import { SocketIOProvider } from 'y-socket.io'
-import { MonacoBinding } from 'y-monaco'
-import Output from '../components/Output'
+import React, {
+  useEffect,
+  useRef,
+  useMemo,
+  useState,
+  useCallback
+} from "react";
+
+import "./App.css";
+
+import { Editor } from "@monaco-editor/react";
+
+import * as Y from "yjs";
+
+import { SocketIOProvider } from "y-socket.io";
+
+import { MonacoBinding } from "y-monaco";
+
+import Output from "../components/Output";
 
 const App = () => {
 
-  const editorRef = useRef(null)
-  const [editorMounted, setEditorMounted] = useState(false)
+  const editorRef = useRef(null);
 
-  const [username, setUsername] = useState(() => {
-    return new URLSearchParams(window.location.search).get("username") || ""
-  })
+  const [editorMounted, setEditorMounted] = useState(false);
 
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState([]);
 
-  const ydoc = useMemo(() => new Y.Doc(), [])
-  const yText = useMemo(() => ydoc.getText("monaco"), [ydoc])
+  const [username, setUsername] = useState("");
+
+  const [room, setRoom] = useState("");
+
+  const [joined, setJoined] = useState(false);
+
+
+  // ================= YJS =================
+
+  const ydoc = useMemo(() => new Y.Doc(), []);
+
+  const yText = useMemo(() => {
+    return ydoc.getText("monaco");
+  }, [ydoc]);
+
+
+  // ================= EDITOR MOUNT =================
+
   const handleMount = useCallback((editor) => {
-    editorRef.current = editor
-    setEditorMounted(true) 
-  }, [])
+
+    editorRef.current = editor;
+
+    setEditorMounted(true);
+
+  }, []);
+
+
+  // ================= SOCKET CONNECTION =================
 
   useEffect(() => {
-    if (!username || !editorRef.current) return
 
-    const provider = new SocketIOProvider(
-      "http://localhost:3000",
-      "monaco",
-      ydoc,
-      { autoConnect: true }
-    )
-
-    provider.awareness.setLocalStateField("user", { username })
-    provider.awareness.on("change", () => {
-      const states = Array.from(provider.awareness.getStates().values())
-      setUsers(
-        states
-          .filter(state => Boolean(state.user))
-          .map(state => state.user)
-      )
-    })
-
-    const handleUnload = () => {
-      provider.awareness.setLocalStateField("user", null)
+    if (
+      !joined ||
+      !editorMounted ||
+      !editorRef.current
+    ) {
+      return;
     }
 
-    window.addEventListener("beforeunload", handleUnload)
+    // Auto connect to same backend
+
+    const provider = new SocketIOProvider(
+      window.location.origin,
+      room,
+      ydoc,
+      {
+        autoConnect: true
+      }
+    );
+
+
+    // ================= USER AWARENESS =================
+
+    provider.awareness.setLocalStateField(
+      "user",
+      {
+        username
+      }
+    );
+
+    provider.awareness.on("change", () => {
+
+      const states = Array.from(
+        provider.awareness.getStates().values()
+      );
+
+      const activeUsers = states
+        .filter((state) => state.user)
+        .map((state) => state.user);
+
+      setUsers(activeUsers);
+
+    });
+
+
+    // ================= MONACO BINDING =================
+
     const binding = new MonacoBinding(
       yText,
       editorRef.current.getModel(),
       new Set([editorRef.current]),
       provider.awareness
-    )
-    return () => {
-      binding.destroy()
-      provider.destroy()
-      window.removeEventListener("beforeunload", handleUnload)
-    }
+    );
 
-  }, [editorMounted, username])       
+
+    // ================= CLEANUP =================
+
+    const handleUnload = () => {
+
+      provider.awareness.setLocalStateField(
+        "user",
+        null
+      );
+
+    };
+
+    window.addEventListener(
+      "beforeunload",
+      handleUnload
+    );
+
+    return () => {
+
+      binding.destroy();
+
+      provider.destroy();
+
+      window.removeEventListener(
+        "beforeunload",
+        handleUnload
+      );
+
+    };
+
+  }, [
+    joined,
+    editorMounted,
+    room,
+    username,
+    ydoc,
+    yText
+  ]);
+
+
+  // ================= JOIN ROOM =================
 
   const handleJoin = (e) => {
-    e.preventDefault()
-    const formData = new FormData(e.target)
-    const name = formData.get("username")
-    setUsername(name)
-    window.history.pushState({}, "", "?username=" + name)
-  }
 
-  if (!username) {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+
+    const enteredUsername =
+      formData.get("username");
+
+    const enteredRoom =
+      formData.get("room");
+
+    setUsername(enteredUsername);
+
+    setRoom(enteredRoom);
+
+    setJoined(true);
+
+    // Shareable URL
+
+    window.history.replaceState(
+      {},
+      "",
+      `?room=${enteredRoom}`
+    );
+
+  };
+
+
+  // ================= INVITE LINK =================
+
+  const inviteLink =
+    `${window.location.origin}?room=${room}`;
+
+
+  // ================= JOIN SCREEN =================
+
+  if (!joined) {
+
     return (
-      <main className='bg-gray-900 h-screen w-full flex gap-4 p-4 justify-center items-center'>
-  
-        <div className='h-[60vh] w-[60vw] flex justify-center items-center'>
-          <form onSubmit={handleJoin} className='flex gap-5 flex-col'>
+      <main className="bg-gray-900 h-screen w-full flex justify-center items-center">
+
+        <form
+          onSubmit={handleJoin}
+          className="bg-gray-800 p-8 rounded-xl flex flex-col gap-5 w-[400px]"
+        >
+
+          <h1 className="text-white text-4xl font-bold text-center">
+            Collaborative Editor
+          </h1>
+
           <input
             type="text"
-            placeholder='Enter username'
             name="username"
+            placeholder="Enter Username"
             required
-            className='p-2 rounded-lg bg-gray-800 text-white text-2xl h-[10vh]'
+            className="p-3 rounded-lg bg-gray-700 text-white outline-none"
           />
+
+          <input
+            type="text"
+            name="room"
+            placeholder="Enter Room Code"
+            required
+            className="p-3 rounded-lg bg-gray-700 text-white outline-none"
+          />
+
           <button
             type="submit"
-            className='p-2 rounded-lg bg-amber-50 text-gray-950  text-xl font-bold'
+            className="bg-white text-black p-3 rounded-lg font-bold hover:bg-gray-300 transition"
           >
-            Join
+            Join Room
           </button>
+
         </form>
-        </div>
+
       </main>
-    )
+    );
+
   }
 
+
+  // ================= MAIN EDITOR =================
+
   return (
-    <main className='bg-gray-900 h-screen w-full flex gap-4 p-4'>
-      <aside className='bg-amber-50 rounded-lg h-full w-1/4 p-2'>
-        <h2 className='text-5xl font-bold mb-10'>Users</h2>
-        <ul className='flex flex-col gap-2 justify-center'>
-          {users.map((user,i=0) => (
-            <li key={user.username} className='px-5 capitalize text-3xl text-gray-600'>
-              {i+1}.{user.username}
+
+    <main className="bg-gray-900 h-screen w-full flex gap-4 p-4">
+
+      {/* ================= USERS ================= */}
+
+      <aside className="bg-white rounded-xl h-full w-1/4 p-5 overflow-y-auto">
+
+        <h2 className="text-3xl font-bold mb-6">
+          Users
+        </h2>
+
+        <div className="mb-5">
+
+          <p className="font-bold mb-2">
+            Room:
+          </p>
+
+          <div className="bg-gray-200 p-2 rounded">
+            {room}
+          </div>
+
+        </div>
+
+        <div className="mb-6">
+
+          <p className="font-bold mb-2">
+            Invite Link:
+          </p>
+
+          <input
+            value={inviteLink}
+            readOnly
+            className="w-full p-2 rounded bg-gray-200 text-sm"
+          />
+
+        </div>
+
+        <ul className="flex flex-col gap-3">
+
+          {users.map((user, index) => (
+
+            <li
+              key={index}
+              className="bg-gray-100 p-3 rounded-lg text-xl capitalize"
+            >
+              {index + 1}. {user.username}
             </li>
+
           ))}
+
         </ul>
+
       </aside>
-      <section className='bg-neutral-800 rounded-lg h-full w-3/4'>
+
+
+
+      {/* ================= EDITOR ================= */}
+
+      <section className="bg-neutral-800 rounded-xl h-full w-3/4 overflow-hidden">
+
         <Editor
-          height='65%'
-          defaultLanguage='javascript'
-          defaultValue='// some comments'
-          theme='vs-dark'  
+          height="65%"
+          defaultLanguage="javascript"
+          defaultValue="// Start coding here..."
+          theme="vs-dark"
           onMount={handleMount}
         />
-        <Output code={editorRef.current?.getValue()} id={63}/>
-      </section>
-    </main>
-  )
-}
 
-export default App
+        <Output
+          code={editorRef.current?.getValue()}
+          id={63}
+        />
+
+      </section>
+
+    </main>
+
+  );
+
+};
+
+export default App;
