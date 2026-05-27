@@ -33,7 +33,7 @@ app.post("/run", async (req, res) => {
     const { code, id } = req.body;
 
     const response = await axios.post(
-      "https://ce.judge0.com/submissions?base64_encoded=false&wait=true",
+      'https://ce.judge0.com/submissions?base64_encoded=false&wait=true',
       {
         language_id: id,
         source_code: code

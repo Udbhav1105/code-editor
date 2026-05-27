@@ -23,6 +23,8 @@ const App = () => {
   const editorRef = useRef(null);
 
   const [editorMounted, setEditorMounted] = useState(false);
+  const[language,setlanguage]=useState("javascript")
+  const[id,setid]=useState(63)
 
   const [users, setUsers] = useState([]);
 
@@ -119,8 +121,6 @@ const App = () => {
     editorMounted,
     room,
     username,
-    ydoc,
-    yText
   ]);
 
   const handleJoin = (e) => {
@@ -182,7 +182,33 @@ const App = () => {
             required
             className="p-3 rounded-lg bg-gray-700 text-white outline-none"
           />
+          <select
+  name="language"
+  required
+  onChange={(e) => {
+    const value = e.target.value;
 
+    setlanguage(value);
+
+    const languageMap = {
+      java: 62,
+      javascript: 63,
+      python: 71,
+      cpp: 54,
+      c: 50,
+    };
+
+    setid(languageMap[value]);
+  }}
+  className="p-3 rounded-lg bg-gray-700 text-white outline-none"
+>
+  <option value="">Select Language</option>
+  <option value="java">Java</option>
+  <option value="javascript">JavaScript</option>
+  <option value="python">Python</option>
+  <option value="cpp">C++</option>
+  <option value="c">C</option>
+</select>
           <button
             type="submit"
             className="bg-white text-black p-3 rounded-lg font-bold hover:bg-gray-300 transition"
@@ -252,14 +278,14 @@ const App = () => {
 
         <Editor
           height="65%"
-          defaultLanguage="javascript"
+          language={language}
           defaultValue="// Start coding here..."
           theme="vs-dark"
           onMount={handleMount}
         />
         <Output
           code={editorRef.current?.getValue()}
-          id={63}
+          id={id}
         />
       </section>
 
