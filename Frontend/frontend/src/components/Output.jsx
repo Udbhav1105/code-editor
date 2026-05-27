@@ -52,7 +52,7 @@ const Output = (props) => {
 
       </div>
 
-      <div className="absolute right-5 bottom-5">
+      <div className="absolute right-5 bottom-10">
 
         <button
           onClick={runCode}

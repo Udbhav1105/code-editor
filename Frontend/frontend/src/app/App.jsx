@@ -275,7 +275,7 @@ const App = () => {
 
       </aside>
       <section className="bg-neutral-800 rounded-xl h-full w-3/4 overflow-hidden">
-
+        <h1 className="text-right px-5 text-xl text-amber-300 capitalize">{language}</h1>
         <Editor
           height="65%"
           language={language}
