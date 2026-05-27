@@ -54,23 +54,21 @@ app.post("/run", async (req, res) => {
   }
 
 });
+
+
 const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
 
-const frontendPath = path.join(
-  __dirname,
-  "../frontend/dist"
-);
-
-app.use(express.static(frontendPath));
+app.use(express.static(path.join(__dirname, "public")));
 app.get(/.*/, (req, res) => {
 
   res.sendFile(
-    path.join(frontendPath, "index.html")
+    path.join(__dirname, "public", "index.html")
   );
 
 });
+
 const PORT = process.env.PORT || 3000;
 
 httpServer.listen(PORT, "0.0.0.0", () => {
