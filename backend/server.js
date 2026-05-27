@@ -8,12 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const app = express();
-
 const httpServer = createServer(app);
-
-
-// ================= MIDDLEWARE =================
-
 app.use(express.json());
 
 app.use(express.urlencoded({
@@ -21,10 +16,6 @@ app.use(express.urlencoded({
 }));
 
 app.use(cors());
-
-
-// ================= SOCKET.IO =================
-
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
@@ -35,10 +26,6 @@ const io = new Server(httpServer, {
 const ysocketio = new YSocketIO(io);
 
 ysocketio.initialize();
-
-
-// ================= API =================
-
 app.post("/run", async (req, res) => {
 
   try {
@@ -67,30 +54,16 @@ app.post("/run", async (req, res) => {
   }
 
 });
-
-
-// ================= FRONTEND BUILD =================
-
 const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
-
-
-// CHANGE THIS PATH IF NEEDED
 
 const frontendPath = path.join(
   __dirname,
   "../frontend/dist"
 );
 
-
-// Serve frontend files
-
 app.use(express.static(frontendPath));
-
-
-// IMPORTANT FIX
-
 app.get(/.*/, (req, res) => {
 
   res.sendFile(
@@ -98,10 +71,6 @@ app.get(/.*/, (req, res) => {
   );
 
 });
-
-
-// ================= SERVER =================
-
 const PORT = process.env.PORT || 3000;
 
 httpServer.listen(PORT, "0.0.0.0", () => {

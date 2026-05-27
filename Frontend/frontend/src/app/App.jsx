@@ -32,18 +32,11 @@ const App = () => {
 
   const [joined, setJoined] = useState(false);
 
-
-  // ================= YJS =================
-
   const ydoc = useMemo(() => new Y.Doc(), []);
 
   const yText = useMemo(() => {
     return ydoc.getText("monaco");
   }, [ydoc]);
-
-
-  // ================= EDITOR MOUNT =================
-
   const handleMount = useCallback((editor) => {
 
     editorRef.current = editor;
@@ -51,10 +44,6 @@ const App = () => {
     setEditorMounted(true);
 
   }, []);
-
-
-  // ================= SOCKET CONNECTION =================
-
   useEffect(() => {
 
     if (
@@ -64,9 +53,6 @@ const App = () => {
     ) {
       return;
     }
-
-    // Auto connect to same backend
-
     const provider = new SocketIOProvider(
       window.location.origin,
       room,
@@ -75,10 +61,6 @@ const App = () => {
         autoConnect: true
       }
     );
-
-
-    // ================= USER AWARENESS =================
-
     provider.awareness.setLocalStateField(
       "user",
       {
@@ -99,20 +81,12 @@ const App = () => {
       setUsers(activeUsers);
 
     });
-
-
-    // ================= MONACO BINDING =================
-
     const binding = new MonacoBinding(
       yText,
       editorRef.current.getModel(),
       new Set([editorRef.current]),
       provider.awareness
     );
-
-
-    // ================= CLEANUP =================
-
     const handleUnload = () => {
 
       provider.awareness.setLocalStateField(
@@ -149,9 +123,6 @@ const App = () => {
     yText
   ]);
 
-
-  // ================= JOIN ROOM =================
-
   const handleJoin = (e) => {
 
     e.preventDefault();
@@ -180,15 +151,8 @@ const App = () => {
 
   };
 
-
-  // ================= INVITE LINK =================
-
   const inviteLink =
     `${window.location.origin}?room=${room}`;
-
-
-  // ================= JOIN SCREEN =================
-
   if (!joined) {
 
     return (
@@ -233,15 +197,9 @@ const App = () => {
 
   }
 
-
-  // ================= MAIN EDITOR =================
-
   return (
 
     <main className="bg-gray-900 h-screen w-full flex gap-4 p-4">
-
-      {/* ================= USERS ================= */}
-
       <aside className="bg-white rounded-xl h-full w-1/4 p-5 overflow-y-auto">
 
         <h2 className="text-3xl font-bold mb-6">
@@ -290,11 +248,6 @@ const App = () => {
         </ul>
 
       </aside>
-
-
-
-      {/* ================= EDITOR ================= */}
-
       <section className="bg-neutral-800 rounded-xl h-full w-3/4 overflow-hidden">
 
         <Editor
@@ -304,12 +257,10 @@ const App = () => {
           theme="vs-dark"
           onMount={handleMount}
         />
-
         <Output
           code={editorRef.current?.getValue()}
           id={63}
         />
-
       </section>
 
     </main>
